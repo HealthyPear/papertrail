@@ -1,0 +1,69 @@
+site_name: papertrail
+site_description: Retrieve author publications and compute bibliometric metrics
+site_author: Michele Peresano
+docs_dir: docs
+use_directory_urls: false
+not_in_nav: |
+  reference/**
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Plotting: plotting.md
+  - Data Sources: data-sources.md
+  - Impact Factor: impact-factor.md
+  - Development: development.md
+  - API Reference: reference/index.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
