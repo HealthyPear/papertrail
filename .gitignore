@@ -17,3 +17,5 @@ __pycache__
 .mypy_cache
 .coverage
 site
+.papertrail
+.pytest_cache
