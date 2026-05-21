@@ -75,6 +75,9 @@ papertrail metrics "Marie Curie" \
 
 # Interactive author dashboard
 papertrail plots "Marie Curie" --png curie_dashboard.png --pdf curie_dashboard.pdf
+
+# Browse the local user-data database in a Bokeh server app
+papertrail user-data-app
 ```
 
 ### Python API
@@ -116,7 +119,7 @@ All development tools can be run from the ``dev`` environment as
 pixi run tool
 ```
 
-where tool can be any of ``test``, ``lint``,  ``fmt``,  ``typecheck``,  ``pre-commit``, 
+where tool can be any of ``test``, ``lint``,  ``fmt``,  ``typecheck``,  ``pre-commit``,
 
 E.g. before committing, please install the pre-commit hooks:
 
