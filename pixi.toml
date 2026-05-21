@@ -2,7 +2,7 @@
 authors = ["Michele Peresano <peresano@mpp.mpg.de>"]
 channels = ["conda-forge"]
 name = "papertrail"
-platforms = ["osx-arm64"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
 version = "0.1.0"
 
 [tasks]
@@ -14,7 +14,7 @@ docs-serve = "properdocs serve"
 docs-build = "properdocs build"
 
 [dependencies]
-python = ">=3.11,<3.13"
+python = ">=3.11,<3.14"
 pydantic = ">=2.0"
 pandas = ">=2.0"
 typer = ">=0.9"
@@ -40,11 +40,24 @@ mkdocs = "*"
 mkdocs-material = "*"
 
 [feature.dev.pypi-dependencies]
+properdocs = ">=1.6"
 mkdocstrings = { version = ">=0.25", extras = ["python"] }
 mkdocs-gen-files = ">=0.5"
 mkdocs-literate-nav = ">=0.6"
 mkdocs-section-index = ">=0.3"
 
+[feature.py311.dependencies]
+python = "3.11.*"
+
+[feature.py312.dependencies]
+python = "3.12.*"
+
+[feature.py313.dependencies]
+python = "3.13.*"
+
 [environments]
 default = { features = [], solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
+dev-py311 = { features = ["dev", "py311"], solve-group = "py311" }
+dev-py312 = { features = ["dev", "py312"], solve-group = "py312" }
+dev-py313 = { features = ["dev", "py313"], solve-group = "py313" }
