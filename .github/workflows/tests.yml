@@ -25,6 +25,7 @@ jobs:
           cache: true
 
       - name: Run tests
-        env:
-          PIXI_ENV: ${{ format('dev-py{0}', replace(matrix.python-version, '.', '')) }}
-        run: pixi run -e "$PIXI_ENV" test
+        run: |
+          PIXI_ENV="dev-py${{ matrix.python-version }}"
+          PIXI_ENV="${PIXI_ENV//./}"
+          pixi run -e "$PIXI_ENV" test
