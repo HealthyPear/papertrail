@@ -1,0 +1,8 @@
+{
+    "recommendations": [
+        "charliermarsh.ruff",
+        "ms-python.mypy-type-checker",
+        "elagil.pre-commit-helper",
+        "mkhl.direnv"
+    ]
+}
