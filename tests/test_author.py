@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import sqlite3
+from pathlib import Path
+
 from papertrail.author import AuthorProfile
 from papertrail.fetchers.base import BaseFetcher
 from papertrail.models import AuthorInfo, Publication
@@ -64,3 +67,38 @@ def test_repr() -> None:
     profile = AuthorProfile("Jane Doe", fetcher=MockFetcher()).fetch()
     assert "Jane Doe" in repr(profile)
     assert "5" in repr(profile)
+
+
+def test_fetch_writes_local_cache(tmp_path: Path) -> None:
+    cache_path = tmp_path / "papertrail_cache.sqlite3"
+    profile = AuthorProfile(
+        "Jane Doe",
+        fetcher=MockFetcher(),
+        cache_path=cache_path,
+    ).fetch()
+
+    assert profile.metrics().total_publications == 5
+    assert cache_path.exists()
+
+    with sqlite3.connect(cache_path) as conn:
+        author_rows = conn.execute("SELECT COUNT(*) FROM authors").fetchone()
+        publication_rows = conn.execute("SELECT COUNT(*) FROM publications").fetchone()
+        metric_rows = conn.execute(
+            "SELECT COUNT(*) FROM author_metrics_snapshots"
+        ).fetchone()
+
+    assert author_rows is not None and author_rows[0] == 1
+    assert publication_rows is not None and publication_rows[0] == 5
+    assert metric_rows is not None and metric_rows[0] >= 1
+
+
+def test_disable_local_cache(tmp_path: Path) -> None:
+    cache_path = tmp_path / "papertrail_cache.sqlite3"
+    AuthorProfile(
+        "Jane Doe",
+        fetcher=MockFetcher(),
+        enable_local_cache=False,
+        cache_path=cache_path,
+    ).fetch()
+
+    assert not cache_path.exists()
