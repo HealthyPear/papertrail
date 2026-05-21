@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Literal
 
 import typer
+from bokeh.application import Application
+from bokeh.application.handlers.function import FunctionHandler
+from bokeh.server.server import Server
 from rich.console import Console
 from rich.table import Table
 
@@ -13,6 +16,7 @@ from papertrail.author import AuthorProfile
 from papertrail.exceptions import AuthorNotFoundError, FetchError
 from papertrail.fetchers.ads import ADSFetcher
 from papertrail.metrics.impact_factor import ImpactFactorDatabase
+from papertrail.server.cache_app import build_user_data_document
 
 app = typer.Typer(
     name="papertrail",
@@ -329,6 +333,75 @@ def plots_command(
     if pdf:
         profile.export_dashboard(pdf, fmt="pdf")
         console.print(f"[green]Dashboard PDF -> {pdf}")
+
+
+@app.command("user-data-app")
+def user_data_app_command(
+    db_path: Path = typer.Option(
+        Path(".papertrail/user-data.sqlite3"),
+        "--db-path",
+        help="Path to local papertrail SQLite user-data file.",
+    ),
+    port: int = typer.Option(5006, "--port", help="Port for the Bokeh server."),
+    show: bool = typer.Option(
+        True,
+        "--show/--no-show",
+        help="Open the app in a browser tab automatically.",
+    ),
+) -> None:
+    """Run an interactive server app to browse local user data and export data."""
+    _run_user_data_app(db_path=db_path, port=port, show=show)
+
+
+@app.command("cache-app", hidden=True)
+def cache_app_command_legacy(
+    db_path: Path = typer.Option(
+        Path(".papertrail/user-data.sqlite3"),
+        "--db-path",
+        help="Path to local papertrail SQLite user-data file.",
+    ),
+    port: int = typer.Option(5006, "--port", help="Port for the Bokeh server."),
+    show: bool = typer.Option(
+        True,
+        "--show/--no-show",
+        help="Open the app in a browser tab automatically.",
+    ),
+) -> None:
+    """Legacy alias for user-data-app."""
+    console.print(
+        "[yellow]`cache-app` is deprecated. Use `user-data-app` instead."
+    )
+    _run_user_data_app(db_path=db_path, port=port, show=show)
+
+
+def _run_user_data_app(*, db_path: Path, port: int, show: bool) -> None:
+    default_user_data_path = Path(".papertrail/user-data.sqlite3")
+    legacy_cache_path = Path(".papertrail/cache.sqlite3")
+    resolved_db_path = db_path
+    if (
+        db_path == default_user_data_path
+        and not default_user_data_path.exists()
+        and legacy_cache_path.exists()
+    ):
+        resolved_db_path = legacy_cache_path
+        console.print(
+            "[yellow]Using legacy database path .papertrail/cache.sqlite3. "
+            "You can move it to .papertrail/user-data.sqlite3."
+        )
+
+    app_handler = Application(FunctionHandler(build_user_data_document(resolved_db_path)))
+    server = Server({"/": app_handler}, port=port)
+    server.start()
+
+    console.print(
+        f"[green]User-data app running at http://localhost:{port} (db: {resolved_db_path})"
+    )
+    if show:
+        server.io_loop.add_callback(server.show, "/")
+    try:
+        server.io_loop.start()
+    except KeyboardInterrupt:
+        console.print("[yellow]User-data app stopped.")
 
 
 def _to_ads_author_query(name: str) -> str:
