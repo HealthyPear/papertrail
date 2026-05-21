@@ -18,7 +18,6 @@ The first set is modeled on common ADS-style author views:
 - publications vs year in grouped/stacked, total/normalized modes
 - citations vs year in grouped/stacked, total/normalized modes
 - index-vs-time overlays (total vs refereed)
-- cumulative index-vs-time overlays (total vs refereed)
 - index snapshot panel (total vs refereed) including `m` and `riq`
 
 These views are intended to mirror the core summary analyses available in ADS

@@ -22,8 +22,9 @@ from bokeh.embed import json_item
 from bokeh.io import output_file, save
 from bokeh.io.export import export_png
 from bokeh.layouts import column
-from bokeh.models import ColumnDataSource, Div, FactorRange, HoverTool
+from bokeh.models import ColumnDataSource, Div, HoverTool, TabPanel, Tabs
 from bokeh.plotting import figure
+from bokeh.transform import dodge
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
@@ -50,7 +51,7 @@ def build_publications_per_year_plot(metrics: AuthorMetrics) -> object:
         title="Publications per year",
         x_axis_label="Year",
         y_axis_label="Publications",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -77,7 +78,7 @@ def build_citations_per_year_plot(metrics: AuthorMetrics) -> object:
         title="Citations per year",
         x_axis_label="Year",
         y_axis_label="Citations",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -117,7 +118,7 @@ def build_refereed_breakdown_plot(metrics: AuthorMetrics) -> object | None:
         title="Refereed breakdown",
         x_axis_label="Category",
         y_axis_label="Publications",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -154,7 +155,7 @@ def build_publication_type_breakdown_plot(metrics: AuthorMetrics) -> object | No
         title="Publication type breakdown",
         x_axis_label="Type",
         y_axis_label="Publications",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -192,7 +193,7 @@ def build_top_journals_plot(metrics: AuthorMetrics) -> object | None:
         title="Top journals / venues",
         x_axis_label="Publications",
         y_axis_label="Venue",
-        width=900,
+        sizing_mode="stretch_width",
         height=360,
         tools=INTERACTIVE_TOOLS,
     )
@@ -228,7 +229,7 @@ def build_citation_distribution_plot(metrics: AuthorMetrics) -> object | None:
         title="Citation distribution",
         x_axis_label="Citations per paper",
         y_axis_label="Publications",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -262,14 +263,13 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         )
     )
 
-    children = [
-        header,
-        build_publications_per_year_plot(metrics),
-        build_citations_per_year_plot(metrics),
+    tabs: list[TabPanel] = [
+        TabPanel(title="Publications/Year", child=build_publications_per_year_plot(metrics)),
+        TabPanel(title="Citations/Year", child=build_citations_per_year_plot(metrics)),
     ]
     refereed_plot = build_refereed_breakdown_plot(metrics)
     if refereed_plot is not None:
-        children.append(refereed_plot)
+        tabs.append(TabPanel(title="Refereed Split", child=refereed_plot))
     pub_grouped_total = build_refereed_year_comparison_plot(
         metrics,
         value="publications",
@@ -277,7 +277,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=False,
     )
     if pub_grouped_total is not None:
-        children.append(pub_grouped_total)
+        tabs.append(TabPanel(title="Pubs Grouped Total", child=pub_grouped_total))
     pub_stacked_total = build_refereed_year_comparison_plot(
         metrics,
         value="publications",
@@ -285,7 +285,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=False,
     )
     if pub_stacked_total is not None:
-        children.append(pub_stacked_total)
+        tabs.append(TabPanel(title="Pubs Stacked Total", child=pub_stacked_total))
     pub_grouped_norm = build_refereed_year_comparison_plot(
         metrics,
         value="publications",
@@ -293,7 +293,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=True,
     )
     if pub_grouped_norm is not None:
-        children.append(pub_grouped_norm)
+        tabs.append(TabPanel(title="Pubs Grouped Norm", child=pub_grouped_norm))
     pub_stacked_norm = build_refereed_year_comparison_plot(
         metrics,
         value="publications",
@@ -301,7 +301,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=True,
     )
     if pub_stacked_norm is not None:
-        children.append(pub_stacked_norm)
+        tabs.append(TabPanel(title="Pubs Stacked Norm", child=pub_stacked_norm))
     cit_grouped_total = build_refereed_year_comparison_plot(
         metrics,
         value="citations",
@@ -309,7 +309,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=False,
     )
     if cit_grouped_total is not None:
-        children.append(cit_grouped_total)
+        tabs.append(TabPanel(title="Cites Grouped Total", child=cit_grouped_total))
     cit_stacked_total = build_refereed_year_comparison_plot(
         metrics,
         value="citations",
@@ -317,7 +317,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=False,
     )
     if cit_stacked_total is not None:
-        children.append(cit_stacked_total)
+        tabs.append(TabPanel(title="Cites Stacked Total", child=cit_stacked_total))
     cit_grouped_norm = build_refereed_year_comparison_plot(
         metrics,
         value="citations",
@@ -325,7 +325,7 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=True,
     )
     if cit_grouped_norm is not None:
-        children.append(cit_grouped_norm)
+        tabs.append(TabPanel(title="Cites Grouped Norm", child=cit_grouped_norm))
     cit_stacked_norm = build_refereed_year_comparison_plot(
         metrics,
         value="citations",
@@ -333,23 +333,25 @@ def build_author_dashboard(metrics: AuthorMetrics) -> object:
         normalized=True,
     )
     if cit_stacked_norm is not None:
-        children.append(cit_stacked_norm)
+        tabs.append(TabPanel(title="Cites Stacked Norm", child=cit_stacked_norm))
     indices_timeseries_plot = build_index_timeseries_plots(metrics)
     if indices_timeseries_plot is not None:
-        children.append(indices_timeseries_plot)
+        tabs.append(TabPanel(title="Indices Over Time", child=indices_timeseries_plot))
     index_snapshot_plot = build_index_snapshot_plot(metrics)
     if index_snapshot_plot is not None:
-        children.append(index_snapshot_plot)
+        tabs.append(TabPanel(title="Indices Snapshot", child=index_snapshot_plot))
     citation_distribution_plot = build_citation_distribution_plot(metrics)
     if citation_distribution_plot is not None:
-        children.append(citation_distribution_plot)
+        tabs.append(TabPanel(title="Citation Distribution", child=citation_distribution_plot))
     publication_type_plot = build_publication_type_breakdown_plot(metrics)
     if publication_type_plot is not None:
-        children.append(publication_type_plot)
+        tabs.append(TabPanel(title="Publication Types", child=publication_type_plot))
     top_journals_plot = build_top_journals_plot(metrics)
     if top_journals_plot is not None:
-        children.append(top_journals_plot)
-    return column(*children, sizing_mode="stretch_width")
+        tabs.append(TabPanel(title="Top Venues", child=top_journals_plot))
+
+    tabs_view = Tabs(tabs=tabs, sizing_mode="stretch_width")
+    return column(header, tabs_view, sizing_mode="stretch_width")
 
 
 def build_refereed_year_comparison_plot(
@@ -401,7 +403,7 @@ def build_refereed_year_comparison_plot(
         title=f"{title_value} vs year ({title_mode}, {title_norm})",
         x_axis_label="Year",
         y_axis_label=y_label,
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )
@@ -425,51 +427,39 @@ def build_refereed_year_comparison_plot(
             )
         )
     else:
-        factors: list[tuple[str, str]] = []
-        counts: list[float] = []
-        colors: list[str] = []
-        labels: list[str] = []
-        years_grouped: list[str] = []
-        for year, ref_val, non_ref_val in zip(x_values, ref_values, non_ref_values):
-            factors.append((year, "Refereed"))
-            counts.append(ref_val)
-            colors.append("#2F855A")
-            labels.append("Refereed")
-            years_grouped.append(year)
-            factors.append((year, "Non-refereed"))
-            counts.append(non_ref_val)
-            colors.append("#718096")
-            labels.append("Non-refereed")
-            years_grouped.append(year)
-
         grouped_source = ColumnDataSource(
             {
-                "factor": factors,
-                "count": counts,
-                "color": colors,
-                "label": labels,
-                "year": years_grouped,
+                "year": x_values,
+                "refereed": ref_values,
+                "non_refereed": non_ref_values,
             }
         )
-        plot = figure(
-            x_range=FactorRange(*factors),
-            title=f"{title_value} vs year ({title_mode}, {title_norm})",
-            x_axis_label="Year",
-            y_axis_label=y_label,
-            width=900,
-            height=320,
-            tools=INTERACTIVE_TOOLS,
+        plot.vbar(
+            x=dodge("year", -0.2, range=plot.x_range),
+            top="refereed",
+            width=0.35,
+            source=grouped_source,
+            fill_color="#2F855A",
+            line_color="#2F855A",
+            legend_label="Refereed",
         )
         plot.vbar(
-            x="factor",
-            top="count",
-            width=0.8,
+            x=dodge("year", 0.2, range=plot.x_range),
+            top="non_refereed",
+            width=0.35,
             source=grouped_source,
-            fill_color="color",
-            line_color="color",
+            fill_color="#718096",
+            line_color="#718096",
+            legend_label="Non-refereed",
         )
         plot.add_tools(
-            HoverTool(tooltips=[("Year", "@year"), ("Series", "@label"), ("Value", "@count")])
+            HoverTool(
+                tooltips=[
+                    ("Year", "@year"),
+                    ("Refereed", "@refereed"),
+                    ("Non-refereed", "@non_refereed"),
+                ]
+            )
         )
 
     if plot.legend:
@@ -478,7 +468,9 @@ def build_refereed_year_comparison_plot(
     return plot
 
 
-def build_index_timeseries_plots(metrics: AuthorMetrics) -> object | None:
+def build_index_timeseries_plots(
+    metrics: AuthorMetrics,
+) -> object | None:
     """Build one combined index-vs-time plot with total and refereed overlays."""
     ordered_indices = ["h", "m", "g", "i10", "i100", "tori", "riq", "read10"]
     palette = [
@@ -496,7 +488,7 @@ def build_index_timeseries_plots(metrics: AuthorMetrics) -> object | None:
         title="Indices vs time (all in one, total vs refereed)",
         x_axis_label="Year",
         y_axis_label="Index value",
-        width=900,
+        sizing_mode="stretch_width",
         height=420,
         tools=INTERACTIVE_TOOLS,
     )
@@ -620,7 +612,7 @@ def build_index_snapshot_plot(metrics: AuthorMetrics) -> object | None:
         title="Index snapshot (Total vs Refereed)",
         x_axis_label="Index",
         y_axis_label="Value",
-        width=900,
+        sizing_mode="stretch_width",
         height=320,
         tools=INTERACTIVE_TOOLS,
     )

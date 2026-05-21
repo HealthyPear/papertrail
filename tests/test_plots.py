@@ -141,7 +141,12 @@ def test_build_index_snapshot_plot(sample_publications: list[Publication]) -> No
 def test_build_author_dashboard(sample_publications: list[Publication]) -> None:
     metrics = compute_metrics("Jane Doe", sample_publications)
     dashboard = build_author_dashboard(metrics)
-    assert len(dashboard.children) >= 3
+    assert len(dashboard.children) == 2
+    tabs_widget = dashboard.children[1]
+    assert hasattr(tabs_widget, "tabs")
+    assert len(tabs_widget.tabs) >= 5
+    tab_titles = [tab.title for tab in tabs_widget.tabs]
+    assert "Indices Over Time" in tab_titles
 
 
 def test_export_dashboard_html(
