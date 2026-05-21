@@ -1,0 +1,50 @@
+[workspace]
+authors = ["Michele Peresano <peresano@mpp.mpg.de>"]
+channels = ["conda-forge"]
+name = "papertrail"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+test = "pytest"
+lint = "ruff check src tests"
+fmt = "ruff format src tests"
+typecheck = "mypy src"
+docs-serve = "properdocs serve"
+docs-build = "properdocs build"
+
+[dependencies]
+python = ">=3.11,<3.13"
+pydantic = ">=2.0"
+pandas = ">=2.0"
+typer = ">=0.9"
+rich = ">=13.0"
+hatchling = ">=1.21"
+
+[pypi-dependencies]
+pyalex = ">=0.13"
+ads = ">=0.12"
+bokeh = ">=3.4"
+python-dotenv = ">=1.0"
+reportlab = ">=4.2"
+papertrail = { path = ".", editable = true }
+
+[feature.dev.dependencies]
+ruff = "*"
+mypy = "*"
+pytest = "*"
+pytest-cov = "*"
+pre-commit = "*"
+pandas-stubs = "*"
+mkdocs = "*"
+mkdocs-material = "*"
+
+[feature.dev.pypi-dependencies]
+mkdocstrings = { version = ">=0.25", extras = ["python"] }
+mkdocs-gen-files = ">=0.5"
+mkdocs-literate-nav = ">=0.6"
+mkdocs-section-index = ">=0.3"
+
+[environments]
+default = { features = [], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
