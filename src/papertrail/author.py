@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
+from papertrail.cache import LocalMetricsCache
 from papertrail.exceptions import AuthorNotFoundError
 from papertrail.exporters import bibtex as bibtex_mod
 from papertrail.exporters import csv_exporter, json_exporter
@@ -46,12 +47,45 @@ class AuthorProfile:
         *,
         fetcher: BaseFetcher | None = None,
         email: str | None = None,
+        enable_local_cache: bool | None = None,
+        cache_path: str | Path | None = None,
+        enable_user_data: bool | None = None,
+        user_data_path: str | Path | None = None,
     ) -> None:
         self.name = name
         self._fetcher: BaseFetcher = fetcher or OpenAlexFetcher(email=email)
         self._publications: list[Publication] = []
         self._author_info: AuthorInfo | None = None
         self._if_database: ImpactFactorDatabase | None = None
+        self._source_analysis: dict[str, Any] | None = None
+        self._cached_metrics: AuthorMetrics | None = None
+
+        if (
+            enable_user_data is not None
+            and enable_local_cache is not None
+            and enable_user_data != enable_local_cache
+        ):
+            raise ValueError(
+                "Received conflicting values for enable_user_data and enable_local_cache."
+            )
+        resolved_enable_user_data = (
+            enable_user_data
+            if enable_user_data is not None
+            else (enable_local_cache if enable_local_cache is not None else True)
+        )
+
+        if cache_path is not None and user_data_path is not None:
+            raise ValueError(
+                "Use only one of user_data_path or cache_path, not both."
+            )
+        resolved_path = user_data_path if user_data_path is not None else cache_path
+        resolved_cache_path = Path(resolved_path) if resolved_path is not None else None
+
+        self._local_cache = (
+            LocalMetricsCache(resolved_cache_path)
+            if resolved_enable_user_data
+            else None
+        )
 
     # ------------------------------------------------------------------
     # Properties
@@ -88,6 +122,7 @@ class AuthorProfile:
         self._if_database = db
         if self._publications:
             self._publications = db.enrich_publications(self._publications)
+            self._cached_metrics = None
         return self
 
     # ------------------------------------------------------------------
@@ -158,6 +193,24 @@ class AuthorProfile:
                 self._publications
             )
 
+        self._source_analysis = self._fetcher.fetch_analyze_metrics(self._publications)
+        self._cached_metrics = compute_metrics(
+            author_name=self.name,
+            publications=self._publications,
+            openalex_id=self._author_info.id if self._author_info else None,
+            orcid=self._author_info.orcid if self._author_info else None,
+            source_analysis=self._source_analysis,
+        )
+
+        if self._local_cache is not None:
+            self._local_cache.save_fetch(
+                author_name=self.name,
+                author_info=self._author_info,
+                publications=self._publications,
+                metrics=self._cached_metrics,
+                fetcher_name=type(self._fetcher).__name__,
+            )
+
         return self
 
     # ------------------------------------------------------------------
@@ -177,15 +230,23 @@ class AuthorProfile:
             raise RuntimeError(
                 "No publications loaded.  Call fetch() before metrics()."
             )
+
+        if self._cached_metrics is not None:
+            return self._cached_metrics
+
         info = self._author_info
-        source_analysis = self._fetcher.fetch_analyze_metrics(self._publications)
-        return compute_metrics(
+        if self._source_analysis is None:
+            self._source_analysis = self._fetcher.fetch_analyze_metrics(
+                self._publications
+            )
+        self._cached_metrics = compute_metrics(
             author_name=self.name,
             publications=self._publications,
             openalex_id=info.id if info else None,
             orcid=info.orcid if info else None,
-            source_analysis=source_analysis,
+            source_analysis=self._source_analysis,
         )
+        return self._cached_metrics
 
     # ------------------------------------------------------------------
     # Exports
